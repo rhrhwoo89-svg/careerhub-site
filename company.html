@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>기업정보 - 커리어허브</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+<div class="breadcrumb" id="breadcrumb"></div>
+
+<div class="page-head container">
+  <h1>기업정보</h1>
+  <p>채용 중인 기업들의 업종, 규모, 소개를 한눈에 확인하세요.</p>
+</div>
+
+<div class="list-summary">
+  <span>전체 <b id="companyCount">0건</b></span>
+</div>
+
+<div class="card-grid" id="companyList"></div>
+
+<script src="assets/data.js"></script>
+<script src="assets/common.js"></script>
+<script>
+  renderHeader("company");
+  renderFooter();
+  renderBreadcrumb("기업정보");
+
+  function companyCardHtml(c) {
+    return `
+      <div class="company-card">
+        <div class="company-logo">${c.logo}</div>
+        <h3>${c.company}</h3>
+        <div class="industry">${c.industry}</div>
+        <div class="company-stats">
+          <span>설립 ${c.founded}년</span>
+          <span>직원 ${c.employees}명</span>
+        </div>
+        <p class="tagline">${c.tagline}</p>
+        <button class="btn btn-outline btn-block btn-sm" onclick="alert('교육용 예시 페이지입니다. 실제 상세 페이지는 연결되어 있지 않습니다.')">기업정보 더보기</button>
+      </div>
+    `;
+  }
+
+  document.getElementById("companyCount").textContent = COMPANIES.length + "건";
+  document.getElementById("companyList").innerHTML = COMPANIES.map(companyCardHtml).join("");
+</script>
+</body>
+</html>
