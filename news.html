@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>채용뉴스 - 커리어허브</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+<div class="breadcrumb" id="breadcrumb"></div>
+
+<div class="page-head container">
+  <h1>채용뉴스</h1>
+  <p>산업·경제·IT·사회 등 채용 시장과 관련된 다양한 소식을 만나보세요.</p>
+</div>
+
+<div class="list-summary">
+  <span>일반 뉴스 <b id="normalCount">0건</b></span>
+</div>
+
+<div class="card-grid" id="normalNewsList"></div>
+
+<div class="section-divider container">
+  <h2>실전 예시 — 네이버뉴스 크롤링 결과 <span class="badge-real">실제 크롤링 데이터</span></h2>
+  <p>아래 기사는 실제 언론사에서 발행된 SK하이닉스 관련 뉴스를 크롤링한 결과입니다. 제목을 클릭하면 원문 기사로 이동합니다.</p>
+</div>
+
+<div class="list-summary">
+  <span>실전 크롤링 뉴스 <b id="realCount">0건</b></span>
+</div>
+
+<div class="card-grid" id="realNewsList"></div>
+
+<script src="assets/data.js"></script>
+<script src="assets/common.js"></script>
+<script>
+  renderHeader("news");
+  renderFooter();
+  renderBreadcrumb("채용뉴스");
+
+  function newsCardHtml(news) {
+    const titleHtml = news.isReal
+      ? `<a href="${news.url}" target="_blank" rel="noopener">${news.title}</a>`
+      : news.title;
+    return `
+      <div class="news-card">
+        <div class="news-top">
+          <span class="news-date">${news.date}</span>
+          <span class="tag">${news.category}</span>
+        </div>
+        <p class="news-title">${titleHtml}</p>
+        <p class="news-summary">${news.isReal ? "실제 네이버뉴스 크롤링 결과입니다. 제목 클릭 시 원문으로 이동합니다." : news.summary}</p>
+        ${news.isReal ? `<span class="news-press">출처: ${news.press}</span>` : ""}
+      </div>
+    `;
+  }
+
+  const normalNews = NEWS.filter((n) => !n.isReal);
+  const realNews = NEWS.filter((n) => n.isReal);
+
+  document.getElementById("normalCount").textContent = normalNews.length + "건";
+  document.getElementById("realCount").textContent = realNews.length + "건";
+
+  document.getElementById("normalNewsList").innerHTML = normalNews.map(newsCardHtml).join("");
+  document.getElementById("realNewsList").innerHTML = realNews.map(newsCardHtml).join("");
+</script>
+</body>
+</html>
