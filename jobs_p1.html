@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>채용공고 1페이지 - 커리어허브</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+<div class="breadcrumb" id="breadcrumb"></div>
+
+<div class="page-head container">
+  <h1>채용공고</h1>
+  <p>전체 30건의 채용공고를 확인하세요. (페이지당 10건)</p>
+</div>
+
+<div class="list-summary">
+  <span>전체 <b>30건</b> 중 <b>1-10</b>번째</span>
+  <span>1 / 3 페이지</span>
+</div>
+
+<div class="card-grid" id="jobList"></div>
+
+<div class="pagination">
+  <a href="jobs_p1.html" class="page-link active">1</a><a href="jobs_p2.html" class="page-link ">2</a><a href="jobs_p3.html" class="page-link ">3</a>
+  <a href="jobs_p2.html" class="page-link next">다음 페이지 →</a>
+</div>
+
+<script src="assets/data.js"></script>
+<script src="assets/common.js"></script>
+<script>
+  renderHeader("jobs");
+  renderFooter();
+  renderBreadcrumb("채용공고");
+
+  function jobCardHtml(job) {
+    const dday = getDdayLabel(job.deadline);
+    const isUrgent = dday.startsWith("D-") && parseInt(dday.slice(2)) <= 5;
+    return `
+      <div class="job-card">
+        <div class="company-logo">${job.logo}</div>
+        <div class="job-card-body">
+          <div class="job-card-top">
+            <div>
+              <p class="job-title">${job.title}</p>
+              <p class="job-company">${job.company}${job.isReal ? ' <span class="tag tag-outline" style="margin-left:6px;">' + job.type + '</span>' : ''}</p>
+            </div>
+            <span class="tag">${job.category}</span>
+          </div>
+          <div class="job-meta">
+            <span>📍 ${job.location}</span>
+            <span>📅 ${job.deadline}</span>
+          </div>
+          <div class="job-card-footer">
+            <span class="deadline-badge ${isUrgent ? "" : "safe"}">${dday}</span>
+            <button class="save-btn" data-job-id="${job.id}">저장하기</button>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  const pageJobs = JOBS.slice(0, 10);
+  document.getElementById("jobList").innerHTML = pageJobs.map(jobCardHtml).join("");
+  initSaveButtons();
+</script>
+</body>
+</html>
