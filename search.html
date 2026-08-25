@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>채용검색 - 커리어허브</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+<div class="breadcrumb" id="breadcrumb"></div>
+
+<div class="page-head container">
+  <h1>채용검색</h1>
+  <p>키워드, 카테고리, 지역으로 채용공고와 채용뉴스를 함께 검색해보세요.</p>
+</div>
+
+<div class="search-page-box">
+  <form class="search-row" id="searchForm">
+    <input type="text" id="searchInput" placeholder="회사명, 공고 제목, 뉴스 제목으로 검색">
+    <button type="submit">검색</button>
+  </form>
+  <div class="filter-row">
+    <div class="filter-group">
+      <label>카테고리</label>
+      <select id="categoryFilter">
+        <option value="">전체</option>
+      </select>
+    </div>
+    <div class="filter-group">
+      <label>지역</label>
+      <select id="locationFilter">
+        <option value="">전체</option>
+      </select>
+    </div>
+    <button type="button" class="reset-btn" id="resetBtn">필터 초기화</button>
+  </div>
+</div>
+
+<div class="sort-row">
+  <span style="font-size:14px; color:var(--text-sub); font-weight:600;">채용공고 정렬</span>
+  <div class="sort-options">
+    <button class="sort-btn active" data-sort="deadline-late">마감 늦은순</button>
+    <button class="sort-btn" data-sort="deadline-soon">마감 임박순</button>
+    <button class="sort-btn" data-sort="company">회사명순</button>
+  </div>
+</div>
+
+<div class="result-section">
+  <h2>채용공고 <span class="count-badge" id="jobResultCount">(0)</span></h2>
+  <div class="card-grid" id="jobResults"></div>
+</div>
+
+<div class="result-section">
+  <h2>채용뉴스 <span class="count-badge" id="newsResultCount">(0)</span></h2>
+  <div class="card-grid" id="newsResults"></div>
+</div>
+
+<script src="assets/data.js"></script>
+<script src="assets/common.js"></script>
+<script>
+  renderHeader("search");
+  renderFooter();
+  renderBreadcrumb("채용검색");
+
+  // 필터 옵션 채우기
+  const categories = [...new Set(JOBS.map((j) => j.category))].sort();
+  const locations = [...new Set(JOBS.map((j) => j.location))].sort();
+  const categorySelect = document.getElementById("categoryFilter");
+  const locationSelect = document.getElementById("locationFilter");
+  categories.forEach((c) => {
+    const opt = document.createElement("option");
+    opt.value = c;
+    opt.textContent = c;
+    categorySelect.appendChild(opt);
+  });
+  locations.forEach((l) => {
+    const opt = document.createElement("option");
+    opt.value = l;
+    opt.textContent = l;
+    locationSelect.appendChild(opt);
+  });
+
+  let currentSort = "deadline-late";
+  const searchInput = document.getElementById("searchInput");
+
+  // URL 쿼리 파라미터로 초기 검색어 세팅
+  const initialQ = getQueryParam("q");
+  if (initialQ) searchInput.value = initialQ;
+
+  function parseDeadline(d) {
+    // YYYY-MM-DD 형식만 정렬 가능, 그 외(상시채용, ~MM/DD 등)는 뒤로
+    if (/^\d{4}-\d{2}-\d{2}$/.test(d)) return new Date(d).getTime();
+    return null;
+  }
+
+  function jobCardHtml(job) {
+    const dday = getDdayLabel(job.deadline);
+    const isUrgent = dday.startsWith("D-") && parseInt(dday.slice(2)) <= 5;
+    return `
+      <div class="job-card">
+        <div class="company-logo">${job.logo}</div>
+        <div class="job-card-body">
+          <div class="job-card-top">
+            <div>
+              <p class="job-title">${job.title}</p>
+              <p class="job-company">${job.company}</p>
+            </div>
+            <span class="tag">${job.category}</span>
+          </div>
+          <div class="job-meta">
+            <span>📍 ${job.location}</span>
+            <span>📅 ${job.deadline}</span>
+          </div>
+          <div class="job-card-footer">
+            <span class="deadline-badge ${isUrgent ? "" : "safe"}">${dday}</span>
+            <button class="save-btn" data-job-id="${job.id}">저장하기</button>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  function newsCardHtml(news) {
+    const titleHtml = news.isReal
+      ? `<a href="${news.url}" target="_blank" rel="noopener">${news.title}</a>`
+      : news.title;
+    return `
+      <div class="news-card">
+        <div class="news-top">
+          <span class="news-date">${news.date}</span>
+          <span class="tag">${news.category}</span>
+        </div>
+        <p class="news-title">${titleHtml}</p>
+        <p class="news-summary">${news.isReal ? "실제 네이버뉴스 크롤링 결과입니다." : news.summary}</p>
+        ${news.isReal ? `<span class="news-press">출처: ${news.press}</span>` : ""}
+      </div>
+    `;
+  }
+
+  function runSearch() {
+    const q = searchInput.value.trim().toLowerCase();
+    const cat = categorySelect.value;
+    const loc = locationSelect.value;
+
+    // ---- 채용공고 필터 ----
+    let jobs = JOBS.filter((j) => {
+      const matchQ =
+        !q ||
+        j.title.toLowerCase().includes(q) ||
+        j.company.toLowerCase().includes(q) ||
+        j.category.toLowerCase().includes(q);
+      const matchCat = !cat || j.category === cat;
+      const matchLoc = !loc || j.location === loc;
+      return matchQ && matchCat && matchLoc;
+    });
+
+    // 정렬
+    if (currentSort === "deadline-late") {
+      jobs.sort((a, b) => {
+        const da = parseDeadline(a.deadline);
+        const db = parseDeadline(b.deadline);
+        if (da === null && db === null) return 0;
+        if (da === null) return 1;
+        if (db === null) return -1;
+        return db - da;
+      });
+    } else if (currentSort === "deadline-soon") {
+      jobs.sort((a, b) => {
+        const da = parseDeadline(a.deadline);
+        const db = parseDeadline(b.deadline);
+        if (da === null && db === null) return 0;
+        if (da === null) return 1;
+        if (db === null) return -1;
+        return da - db;
+      });
+    } else if (currentSort === "company") {
+      jobs.sort((a, b) => a.company.localeCompare(b.company, "ko"));
+    }
+
+    document.getElementById("jobResultCount").textContent = `(${jobs.length})`;
+    document.getElementById("jobResults").innerHTML = jobs.length
+      ? jobs.map(jobCardHtml).join("")
+      : '<div class="empty-state">검색 조건에 맞는 채용공고가 없습니다.</div>';
+    initSaveButtons();
+
+    // ---- 채용뉴스 필터 (검색어만 적용) ----
+    let news = NEWS.filter((n) => {
+      return !q || n.title.toLowerCase().includes(q) || n.summary.toLowerCase().includes(q);
+    });
+
+    document.getElementById("newsResultCount").textContent = `(${news.length})`;
+    document.getElementById("newsResults").innerHTML = news.length
+      ? news.slice(0, 12).map(newsCardHtml).join("")
+      : '<div class="empty-state">검색 조건에 맞는 뉴스가 없습니다.</div>';
+  }
+
+  document.getElementById("searchForm").addEventListener("submit", (e) => {
+    e.preventDefault();
+    runSearch();
+  });
+  categorySelect.addEventListener("change", runSearch);
+  locationSelect.addEventListener("change", runSearch);
+
+  document.getElementById("resetBtn").addEventListener("click", () => {
+    searchInput.value = "";
+    categorySelect.value = "";
+    locationSelect.value = "";
+    currentSort = "deadline-late";
+    document.querySelectorAll(".sort-btn").forEach((b) => b.classList.remove("active"));
+    document.querySelector('.sort-btn[data-sort="deadline-late"]').classList.add("active");
+    runSearch();
+  });
+
+  document.querySelectorAll(".sort-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll(".sort-btn").forEach((b) => b.classList.remove("active"));
+      btn.classList.add("active");
+      currentSort = btn.dataset.sort;
+      runSearch();
+    });
+  });
+
+  runSearch();
+</script>
+</body>
+</html>
