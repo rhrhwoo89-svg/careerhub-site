@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>마이페이지 - 커리어허브</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+<div class="breadcrumb" id="breadcrumb"></div>
+
+<div class="page-head container">
+  <h1>마이페이지</h1>
+  <p>저장한 채용공고와 활동 내역을 확인하세요.</p>
+</div>
+
+<div class="mypage-layout">
+  <aside class="profile-card">
+    <div class="profile-avatar">C</div>
+    <h3>커리어허브 회원님</h3>
+    <p>guest@careerhub.example</p>
+    <ul class="mypage-menu">
+      <li><a href="#" class="active">대시보드</a></li>
+      <li><a href="#" onclick="alert('교육용 예시 페이지입니다.'); return false;">저장한 공고</a></li>
+      <li><a href="#" onclick="alert('교육용 예시 페이지입니다.'); return false;">지원 현황</a></li>
+      <li><a href="#" onclick="alert('교육용 예시 페이지입니다.'); return false;">알림 설정</a></li>
+      <li><a href="#" onclick="alert('교육용 예시 페이지입니다.'); return false;">회원정보 수정</a></li>
+    </ul>
+  </aside>
+
+  <main class="mypage-main">
+    <div class="widget">
+      <h3>나의 활동 요약</h3>
+      <div class="stat-grid">
+        <div class="stat-box">
+          <div class="num" id="savedCountNum">0</div>
+          <div class="label">저장한 공고</div>
+        </div>
+        <div class="stat-box">
+          <div class="num">0</div>
+          <div class="label">지원한 공고</div>
+        </div>
+        <div class="stat-box">
+          <div class="num">0</div>
+          <div class="label">관심 기업</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="widget">
+      <h3>저장한 채용공고</h3>
+      <div id="savedJobsList"></div>
+    </div>
+  </main>
+</div>
+
+<script src="assets/data.js"></script>
+<script src="assets/common.js"></script>
+<script>
+  renderHeader("mypage");
+  renderFooter();
+  renderBreadcrumb("마이페이지");
+
+  const savedIds = getSavedJobs();
+  document.getElementById("savedCountNum").textContent = savedIds.length;
+
+  const savedJobs = JOBS.filter((j) => savedIds.includes(String(j.id)));
+  const listEl = document.getElementById("savedJobsList");
+
+  if (savedJobs.length === 0) {
+    listEl.innerHTML = '<div class="empty-state">아직 저장한 채용공고가 없습니다. 채용공고 목록에서 "저장하기" 버튼을 눌러보세요.</div>';
+  } else {
+    listEl.innerHTML = savedJobs
+      .map(
+        (j) => `
+      <div class="saved-item">
+        <div>
+          <p class="job-title" style="margin-bottom:2px;">${j.title}</p>
+          <p class="job-company" style="margin:0;">${j.company} · ${j.location}</p>
+        </div>
+        <span class="deadline-badge">${getDdayLabel(j.deadline)}</span>
+      </div>
+    `
+      )
+      .join("");
+  }
+</script>
+</body>
+</html>
